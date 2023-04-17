@@ -109,12 +109,29 @@ public class AwsClientFactories {
     }
 
     @Override
-    public S3AsyncClient s3Async() {
+    public S3AsyncClient s3Async(boolean useCrt) {
+      if (useCrt) {
+        return s3CrtAsync();
+      } else {
+        return s3Async();
+      }
+    }
+
+    private S3AsyncClient s3Async() {
       return S3AsyncClient.builder()
+          .applyMutation(awsProperties::applyClientRegionConfiguration)
           .applyMutation(awsProperties::applyS3EndpointConfigurations)
           .applyMutation(awsProperties::applyS3ServiceConfigurations)
           .applyMutation(awsProperties::applyS3CredentialConfigurations)
           .applyMutation(awsProperties::applyS3SignerConfiguration)
+          .build();
+    }
+
+    public S3AsyncClient s3CrtAsync() {
+      return S3AsyncClient.crtBuilder()
+          .applyMutation(awsProperties::applyClientRegionConfiguration)
+          .applyMutation(awsProperties::applyS3EndpointConfigurations)
+          .applyMutation(awsProperties::applyS3CredentialConfigurations)
           .build();
     }
 

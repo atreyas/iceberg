@@ -39,7 +39,15 @@ public interface AwsClientFactory extends Serializable {
    */
   S3Client s3();
 
-  S3AsyncClient s3Async();
+  /**
+   * Create a new S3Async client.
+   *
+   * <p>n.b.: S3 CRT client does not support all S3 configurations.
+   *
+   * @param useCrt If enabled, uses the S3 CRT client
+   * @return S3 Async client
+   */
+  S3AsyncClient s3Async(boolean useCrt);
 
   /**
    * create a AWS Glue client

@@ -48,13 +48,21 @@ public class AssumeRoleAwsClientFactory implements AwsClientFactory {
   }
 
   @Override
-  public S3AsyncClient s3Async() {
-    return S3AsyncClient.builder()
-        .applyMutation(this::applyAssumeRoleConfigurations)
-        .applyMutation(awsProperties::applyS3EndpointConfigurations)
-        .applyMutation(awsProperties::applyS3ServiceConfigurations)
-        .applyMutation(awsProperties::applyS3SignerConfiguration)
-        .build();
+  public S3AsyncClient s3Async(boolean useCrt) {
+    if (useCrt) {
+      return S3AsyncClient.crtBuilder()
+          .credentialsProvider(getCredentialsProvider())
+          .region(Region.of(awsProperties.clientAssumeRoleRegion()))
+          .applyMutation(awsProperties::applyS3EndpointConfigurations)
+          .build();
+    } else {
+      return S3AsyncClient.builder()
+          .applyMutation(this::applyAssumeRoleConfigurations)
+          .applyMutation(awsProperties::applyS3EndpointConfigurations)
+          .applyMutation(awsProperties::applyS3ServiceConfigurations)
+          .applyMutation(awsProperties::applyS3SignerConfiguration)
+          .build();
+    }
   }
 
   @Override
@@ -95,6 +103,13 @@ public class AssumeRoleAwsClientFactory implements AwsClientFactory {
   }
 
   protected <T extends AwsClientBuilder> T applyAssumeRoleConfigurations(T clientBuilder) {
+    clientBuilder
+        .credentialsProvider(getCredentialsProvider())
+        .region(Region.of(awsProperties.clientAssumeRoleRegion()));
+    return clientBuilder;
+  }
+
+  private StsAssumeRoleCredentialsProvider getCredentialsProvider() {
     AssumeRoleRequest assumeRoleRequest =
         AssumeRoleRequest.builder()
             .roleArn(awsProperties.clientAssumeRoleArn())
@@ -103,14 +118,10 @@ public class AssumeRoleAwsClientFactory implements AwsClientFactory {
             .externalId(awsProperties.clientAssumeRoleExternalId())
             .tags(awsProperties.stsClientAssumeRoleTags())
             .build();
-    clientBuilder
-        .credentialsProvider(
-            StsAssumeRoleCredentialsProvider.builder()
-                .stsClient(sts())
-                .refreshRequest(assumeRoleRequest)
-                .build())
-        .region(Region.of(awsProperties.clientAssumeRoleRegion()));
-    return clientBuilder;
+    return StsAssumeRoleCredentialsProvider.builder()
+        .stsClient(sts())
+        .refreshRequest(assumeRoleRequest)
+        .build();
   }
 
   protected String region() {

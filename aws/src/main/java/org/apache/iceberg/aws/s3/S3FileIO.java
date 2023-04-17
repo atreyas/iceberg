@@ -107,8 +107,10 @@ public class S3FileIO extends S3FileIOBase {
       return;
     }
     if (awsProperties.isS3AsyncClientEnabled()) {
-      LOG.info("Using S3AsyncClient for S3FileIO");
-      this.delegate = new S3AsyncFileIO(clientFactory::s3Async, awsProperties);
+      final boolean isCrtEnabled = awsProperties.isS3AsyncClientCrtEnabled();
+      LOG.info(
+          "Using S3AsyncClient for S3FileIO with CRT {}", isCrtEnabled ? "enabled" : "disabled");
+      this.delegate = new S3AsyncFileIO(() -> clientFactory.s3Async(isCrtEnabled), awsProperties);
     } else {
       LOG.info("Using S3Client (sync) for S3FileIO");
       this.delegate = new S3SyncFileIO(clientFactory::s3, awsProperties);
